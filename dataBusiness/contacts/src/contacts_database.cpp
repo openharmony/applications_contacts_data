@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,7 @@
  */
 
 #include "contacts_database.h"
+#include "parse_contact_id_int.h"
 
 #include <cmath>
 #include <cstdio>
@@ -209,7 +210,13 @@ void ContactsDataBase::GetContactByValue(int &contactValue, OHOS::NativeRdb::Val
     if (value.GetType() == OHOS::NativeRdb::ValueObjectType::TYPE_STRING) {
         std::string tempString;
         value.GetString(tempString);
-        contactValue = std::stoi(tempString);
+        int32_t parsed = 0;
+        if (!ParseContactIdInt(tempString, parsed)) {
+            HILOG_ERROR("GetContactByValue invalid contact id: %{public}s", tempString.c_str());
+            contactValue = 0;
+            return;
+        }
+        contactValue = parsed;
         return;
     }
     contactValue = 0;
@@ -1232,7 +1239,12 @@ int ContactsDataBase::Split(DataShare::DataSharePredicates predicates)
     MatchCandidate matchCandidate;
     int code = RDB_EXECUTE_FAIL;
     for (auto value : whereArgs) {
-        code = matchCandidate.Split(store_, atoi(value.c_str()));
+        int32_t rawId = 0;
+        if (!ParseContactIdInt(value, rawId)) {
+            HILOG_ERROR("Split invalid contact id: %{public}s", value.c_str());
+            return RDB_EXECUTE_FAIL;
+        }
+        code = matchCandidate.Split(store_, rawId);
     }
     if (code != RDB_EXECUTE_OK) {
         HILOG_INFO("Split code %{public}d", code);

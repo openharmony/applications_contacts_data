@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,6 +14,7 @@
  */
 
 #include "merger_contacts.h"
+#include "parse_contact_id_int.h"
 
 #include "common.h"
 #include "contacts_columns.h"
@@ -421,7 +422,12 @@ int MergerContacts::ReContactMerge(
     std::vector<std::string> whereArgs = predicates.GetWhereArgs();
     std::set<int> ids;
     for (auto value : whereArgs) {
-        ids.insert(atoi(value.c_str()));
+        int32_t id = 0;
+        if (!ParseContactIdInt(value, id)) {
+            HILOG_ERROR("ReContactMerge invalid contact id: %{public}s", value.c_str());
+            return RDB_EXECUTE_FAIL;
+        }
+        ids.insert(id);
     }
     if (ids.size() == 0) {
         return RDB_EXECUTE_FAIL;
